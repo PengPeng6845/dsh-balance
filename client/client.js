@@ -72,12 +72,14 @@ window.__ModuleLoader__.load({
       return "";
     }
 
-    function row(label, valueText, level) {
+    function row(label, valueText, level, showDot) {
       return React.createElement(
         "div",
         { className: "uc-row" },
         React.createElement("span", { className: "uc-label" }, label),
-        React.createElement("span", { className: "uc-dot" + level }),
+        showDot === false
+          ? null
+          : React.createElement("span", { className: "uc-dot" + level }),
         React.createElement("span", { className: "uc-value" + level }, valueText),
       );
     }
@@ -123,12 +125,20 @@ window.__ModuleLoader__.load({
       var todayLevel = levelClass(today.cost, thresholds);
       var monthLevel = levelClass(month.cost, thresholds);
       var title =
-        "API 成本 · 今日 " +
+        "API 成本 · 今日(估算) " +
         money(today.cost, data.currency) +
         "（" +
         tokensText(today.totalTokens) +
         " tokens）· 本月 " +
         money(month.cost, data.currency);
+      if (data.balance) {
+        title +=
+          " · 真实余额 " +
+          money(data.balance.totalBalance, data.balance.currency);
+      }
+      if (typeof data.realTodayCost === "number") {
+        title += " · 今日实际(余额差) " + money(data.realTodayCost, data.currency);
+      }
 
       if (!wide) {
         return React.createElement(
@@ -148,6 +158,9 @@ window.__ModuleLoader__.load({
         { className: "uc-wrap", title: title },
         row("今日", money(today.cost, data.currency), todayLevel),
         row("本月", money(month.cost, data.currency), monthLevel),
+        data.balance
+          ? row("余额", money(data.balance.totalBalance, data.balance.currency), "", false)
+          : null,
       );
     }
 

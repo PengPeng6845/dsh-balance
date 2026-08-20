@@ -49,6 +49,19 @@ check("second day separate", totalTokens(r3.today), totalTokens(buckets));
 check("month accumulates across days", totalTokens(r3.month), totalTokens(r1.today) + totalTokens(buckets));
 check("dateKey pad", dateKey(new Date(2026, 0, 5)), "2026-01-05");
 
+// balance samples: real spend = sum of drops; top-ups never count
+const bal = new AggregateStore();
+const t1 = Date.parse("2026-08-20T09:00:00");
+const t2 = Date.parse("2026-08-20T10:00:00");
+const t3 = Date.parse("2026-08-20T11:00:00");
+bal.recordBalance(110, t1);
+bal.recordBalance(109.9, t2);
+bal.recordBalance(159.9, t3); // top-up: rise must not count
+check("balance real spend", bal.realTodaySpend(new Date(2026, 7, 20, 12, 0, 0)), 0.1);
+bal.recordBalance(159.8, Date.parse("2026-08-20T12:00:00"));
+check("balance spend after top-up", bal.realTodaySpend(new Date(2026, 7, 20, 12, 30, 0)), 0.2);
+check("unchanged sample replaces time", bal.state.balanceSamples.length, 4);
+
 // index module loads and exposes the plugin contract
 const mod = await import("../lib/index.js");
 check("plugin name", mod.name, "usage-cost");

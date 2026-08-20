@@ -12,7 +12,8 @@
 - **真实计费数据**：优先读取 tokenUsage 投影（provider 上报，非估算）；token-meter 未挂载时退回其测量锚点；两者皆无则返回全零并注明。
 - **日 / 月累计持久化**：增量写入 storage hub 的 json 后端（单元 usage_cost），后端缺失自动降级为进程内存；差值取非负入账，重试与回放天然幂等、不会重复计费。
 - **按模型计价**：匹配顺序为 模型 id → provider 路由 → "*" 兜底，内置 DeepSeek 官方目录价，你的配置与内置表合并。
-- **侧边栏成本小组件**：侧边栏底部实时显示「API 成本」卡片——今日/本月花费与 token 数，超阈值自动变橙/变红；聚合数据由投影变更流持续驱动，不调用工具也永远最新。
+- **侧边栏成本小组件**：侧边栏底部两行扁平行显示今日/本月估算成本（原生风格：无卡片、hover 高亮、状态点），超阈值自动变橙/变红；聚合数据由投影变更流持续驱动。
+- **余额核实**：官方没有用量明细 API，本插件通过 API key 轮询 /user/balance 获取**真实账户余额**，用余额差计算"今日实际花费"（充值上涨自动忽略）——小组件第三行显示余额，悬停可见估算 vs 实际的对照。
 - **零依赖**：无任何 npm 运行时依赖、无构建步骤；Host 为纯 ESM，Client 为手写 bundle（name / inject / apply）。
 
 ## 安装
@@ -51,6 +52,10 @@ GitHub 直装（未发布 npm 时）：
 | prices | map | DeepSeek 官方目录价 | 每百万 token 单价，键为模型 id / provider 路由 / "*" |
 | warnThreshold | number | 5 | 今日成本超过该值，小组件变橙 |
 | alertThreshold | number | 20 | 今日成本超过该值，小组件变红 |
+| balanceEnabled | boolean | true | 是否轮询官方余额端点核实真实花费 |
+| balanceApiKeyEnv | string | DEEPSEEK_API_KEY | 余额 API key 的凭据引用（环境变量名） |
+| balanceBaseUrl | string | https://api.deepseek.com | 余额 API 基地址 |
+| balanceRefreshMs | number | 300000 | 余额轮询/缓存间隔（毫秒） |
 
 内置价格表（CNY / 1M tokens，会随时间调整，记得按官网更新）：
 
