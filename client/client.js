@@ -6,8 +6,9 @@
  * "react" is consumed. The widget registers into the sidebar.footer.action
  * list slot and polls GET /usage-cost/summary every 10 seconds.
  *
- * Styling rides the DSH theme tokens (--dsw-alias-*) with neutral
- * fallbacks, so the card adapts to light and dark themes.
+ * Visual language matches the native sidebar rows (see the workspace rows
+ * CSS in dsh-client-ui-workspace): flat, no card — 8px radius, 0 8px
+ * padding, hover-only background, --dsw-alias-* tokens, status dot.
  */
 window.__ModuleLoader__.load({
   id: "dsh-usage-cost",
@@ -23,44 +24,34 @@ window.__ModuleLoader__.load({
     var inject = ["slots"];
 
     var CSS = [
-      ".uc-card{display:flex;flex-direction:column;gap:6px;padding:8px 10px;",
-      "border-radius:10px;border:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.16));",
-      "background:var(--dsw-alias-bg-layer-1,rgba(128,128,128,.05));",
-      "font-size:12px;line-height:1.4;color:var(--dsw-alias-label-primary,inherit);",
-      "user-select:none;transition:border-color .15s ease}",
-      ".uc-card:hover{border-color:var(--dsw-alias-border-l2,rgba(128,128,128,.28))}",
-      ".uc-head{display:flex;align-items:center;gap:6px}",
-      ".uc-dot{flex:none;width:7px;height:7px;border-radius:50%;",
-      "background:var(--dsw-alias-state-success-primary,#22c55e);",
-      "animation:uc-pulse 2.4s ease-in-out infinite}",
+      ".uc-wrap{display:flex;flex-direction:column;gap:2px;padding:2px 0}",
+      ".uc-row{cursor:default;user-select:none;display:flex;align-items:center;gap:6px;",
+      "border-radius:8px;padding:0 8px;height:24px;",
+      "color:var(--dsw-alias-label-primary,#3f3f46);font-size:12px;line-height:17px}",
+      ".uc-row:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(128,128,128,.08))}",
+      ".uc-label{flex:1;min-width:0;color:var(--dsw-alias-label-secondary,rgba(128,128,128,.85))}",
+      ".uc-value{font-variant-numeric:tabular-nums;font-weight:600}",
+      ".uc-value.uc-warn{color:var(--dsw-alias-state-warn-primary,#d97706)}",
+      ".uc-value.uc-alert{color:var(--dsw-alias-state-error-primary,#dc2626)}",
+      ".uc-dot{flex:none;width:6px;height:6px;border-radius:50%;",
+      "background:var(--dsw-alias-state-success-primary,#22c55e)}",
       ".uc-dot.uc-warn{background:var(--dsw-alias-state-warn-primary,#d97706)}",
       ".uc-dot.uc-alert{background:var(--dsw-alias-state-error-primary,#dc2626)}",
-      "@keyframes uc-pulse{0%,100%{opacity:1}50%{opacity:.4}}",
-      ".uc-title{flex:1;font-size:11px;font-weight:600;letter-spacing:.02em;",
-      "color:var(--dsw-alias-label-secondary,rgba(128,128,128,.9))}",
-      ".uc-live{font-size:10px;color:var(--dsw-alias-label-secondary,rgba(128,128,128,.7))}",
-      ".uc-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}",
-      ".uc-label{color:var(--dsw-alias-label-secondary,rgba(128,128,128,.9))}",
-      ".uc-amount{font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;",
-      "color:var(--dsw-alias-label-primary,inherit)}",
-      ".uc-amount.uc-warn{color:var(--dsw-alias-state-warn-primary,#d97706)}",
-      ".uc-amount.uc-alert{color:var(--dsw-alias-state-error-primary,#dc2626)}",
-      ".uc-sub{font-size:11px;color:var(--dsw-alias-label-secondary,rgba(128,128,128,.75));",
-      "font-variant-numeric:tabular-nums}",
-      ".uc-divider{height:1px;background:var(--dsw-alias-border-l1,rgba(128,128,128,.14));",
-      "margin:1px 0}",
-      ".uc-compact{align-items:center;text-align:center}",
-      ".uc-compact .uc-amount{font-size:13px}",
+      ".uc-compact{justify-content:center;padding:0 6px}",
     ].join("\n");
 
-    var styleEl = null;
-    function styleTag() {
-      if (styleEl === null) {
-        styleEl = React.createElement("style", {
-          dangerouslySetInnerHTML: { __html: CSS },
-        });
-      }
-      return styleEl;
+    var cssInstalled = false;
+    function ensureCss() {
+      if (cssInstalled) return;
+      cssInstalled = true;
+      if (typeof document === "undefined") return;
+      var id = "dsh-usage-cost/client.css";
+      if (document.querySelector("style[data-plugin-css=" + JSON.stringify(id) + "]") !== null) return;
+      var tag = document.createElement("style");
+      tag.dataset.plugin = "dsh-usage-cost";
+      tag.dataset.pluginCss = id;
+      tag.textContent = CSS;
+      document.head.appendChild(tag);
     }
 
     function money(n, currency) {
@@ -79,6 +70,16 @@ window.__ModuleLoader__.load({
       if (thresholds && cost >= thresholds.alert) return " uc-alert";
       if (thresholds && cost >= thresholds.warn) return " uc-warn";
       return "";
+    }
+
+    function row(label, valueText, level) {
+      return React.createElement(
+        "div",
+        { className: "uc-row" },
+        React.createElement("span", { className: "uc-label" }, label),
+        React.createElement("span", { className: "uc-dot" + level }),
+        React.createElement("span", { className: "uc-value" + level }, valueText),
+      );
     }
 
     function CostWidget(props) {
@@ -110,24 +111,9 @@ window.__ModuleLoader__.load({
 
       if (!data) {
         return React.createElement(
-          React.Fragment,
-          null,
-          styleTag(),
-          React.createElement(
-            "div",
-            { className: "uc-card", title: "dsh-usage-cost" },
-            React.createElement(
-              "div",
-              { className: "uc-head" },
-              React.createElement("span", { className: "uc-dot" }),
-              React.createElement("span", { className: "uc-title" }, "API 成本"),
-            ),
-            React.createElement(
-              "div",
-              { className: "uc-label" },
-              wide ? "统计加载中…" : "…",
-            ),
-          ),
+          "div",
+          { className: "uc-row", title: "dsh-usage-cost" },
+          React.createElement("span", { className: "uc-label" }, wide ? "成本统计中…" : "…"),
         );
       }
 
@@ -136,79 +122,39 @@ window.__ModuleLoader__.load({
       var thresholds = data.thresholds || {};
       var todayLevel = levelClass(today.cost, thresholds);
       var monthLevel = levelClass(month.cost, thresholds);
-      var dotLevel = todayLevel || monthLevel;
+      var title =
+        "API 成本 · 今日 " +
+        money(today.cost, data.currency) +
+        "（" +
+        tokensText(today.totalTokens) +
+        " tokens）· 本月 " +
+        money(month.cost, data.currency);
 
       if (!wide) {
         return React.createElement(
-          React.Fragment,
-          null,
-          styleTag(),
+          "div",
+          { className: "uc-row uc-compact", title: title },
+          React.createElement("span", { className: "uc-dot" + todayLevel }),
           React.createElement(
-            "div",
-            { className: "uc-card uc-compact", title: "API 成本 · 今日 ¥" + money(today.cost, data.currency).slice(1) + " · 本月 ¥" + money(month.cost, data.currency).slice(1) },
-            React.createElement("span", { className: "uc-dot" + dotLevel }),
-            React.createElement(
-              "span",
-              { className: "uc-amount" + todayLevel },
-              money(today.cost, data.currency),
-            ),
-            React.createElement(
-              "span",
-              { className: "uc-sub" },
-              "月 " + money(month.cost, data.currency),
-            ),
+            "span",
+            { className: "uc-value" + todayLevel },
+            money(today.cost, data.currency),
           ),
         );
       }
 
       return React.createElement(
-        React.Fragment,
-        null,
-        styleTag(),
-        React.createElement(
-          "div",
-          { className: "uc-card", title: "API 成本（dsh-usage-cost）" },
-          React.createElement(
-            "div",
-            { className: "uc-head" },
-            React.createElement("span", { className: "uc-dot" + dotLevel }),
-            React.createElement("span", { className: "uc-title" }, "API 成本"),
-            React.createElement("span", { className: "uc-live" }, "实时"),
-          ),
-          React.createElement(
-            "div",
-            { className: "uc-row" },
-            React.createElement("span", { className: "uc-label" }, "今日"),
-            React.createElement(
-              "span",
-              { className: "uc-amount" + todayLevel },
-              money(today.cost, data.currency),
-            ),
-          ),
-          React.createElement("div", { className: "uc-divider" }),
-          React.createElement(
-            "div",
-            { className: "uc-row" },
-            React.createElement("span", { className: "uc-label" }, "本月"),
-            React.createElement(
-              "span",
-              { className: "uc-amount" + monthLevel },
-              money(month.cost, data.currency),
-            ),
-          ),
-          React.createElement(
-            "div",
-            { className: "uc-row" },
-            React.createElement("span", { className: "uc-label" }, "今日 tokens"),
-            React.createElement("span", { className: "uc-sub" }, tokensText(today.totalTokens)),
-          ),
-        ),
+        "div",
+        { className: "uc-wrap", title: title },
+        row("今日", money(today.cost, data.currency), todayLevel),
+        row("本月", money(month.cost, data.currency), monthLevel),
       );
     }
 
     function apply(ctx) {
       var slots = ctx.get("slots");
       if (slots === undefined) return;
+      ensureCss();
       ctx.effect(function () {
         return slots.inject("sidebar.footer.action", function () {
           return slots.register(
