@@ -134,7 +134,7 @@ GitHub 直装：
 <pre>
 npm test                        # 零安装单元冒烟测试（Node 20/22 CI）
 npm pack                        # 生成可分发 tarball
-npm run release -- 0.7.1 "..."  # 一键发版：bump+CHANGELOG+测试+tag+推送(+Release)
+npm run release -- 0.9.0 "..."  # 一键发版：bump+CHANGELOG+测试+tag+推送(+Release)
 npm login && npm publish        # 发布到 npm
 </pre>
 
