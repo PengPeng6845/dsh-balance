@@ -11,7 +11,7 @@ Real API balance in the [DeepSeek Harness](https://github.com/deepseek-ai/deepse
 
 - **Sidebar balance widget** — one flat native-style row "余额 ¥13.94" in the sidebar footer, refreshed every 30s; tooltip carries today's real spend (sum of balance drops) and the check time; the collapsed rail shows just the amount.
 - **API-key verified** — the balance comes from the official endpoint (real billing data). Drops between samples are real spend; top-up rises never count.
-- **token_usage tool** — kept as a bonus: the model can self-report exact provider token buckets plus the real balance; estimated money is secondary only.
+- **token_usage tool** — kept as a bonus: the model can self-report exact provider token buckets plus the real balance; no estimated money anywhere.
 - **Zero dependencies** — no npm runtime deps, no build step; plain ESM host plus a hand-written client bundle.
 
 ## Install
@@ -36,6 +36,7 @@ Override in your profile's cordis.patch.yml:
         balanceApiKeyEnv: DEEPSEEK_API_KEY
         balanceBaseUrl: https://api.deepseek.com
         balanceRefreshMs: 300000
+        lowBalanceAlert: 5
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -43,6 +44,7 @@ Override in your profile's cordis.patch.yml:
 | balanceApiKeyEnv | string | DEEPSEEK_API_KEY | Credential-ref env name holding the API key |
 | balanceBaseUrl | string | https://api.deepseek.com | Balance API base |
 | balanceRefreshMs | number | 300000 | Balance poll interval (ms) |
+| lowBalanceAlert | number | 5 | Tint the value orange below this balance (account currency) |
 
 Balance is displayed in the account currency with no FX conversion.
 

@@ -2,18 +2,21 @@
 
 ## Reporting a Vulnerability
 
-If you believe you have found a security issue in dsh-usage-cost, please
-report it privately via the GitHub Security Advisory ("Report a vulnerability")
-tab of this repository instead of opening a public issue.
+If you believe you have found a security issue in @pengpeng6845/dsh-balance,
+please report it privately via the GitHub Security Advisory ("Report a
+vulnerability") tab of this repository instead of opening a public issue.
 
 ## Scope
 
 The plugin runs inside your local DeepSeek Harness process:
 
-- It reads token-usage data already produced by the harness and writes
-  aggregate counters into the storage hub's json backend.
-- It makes no network requests and sends no data anywhere.
-- Prices come from local configuration, never from the network.
+- It reads the API key from the credentials seam (an environment variable
+  reference such as DEEPSEEK_API_KEY), never from files it writes, and
+  re-resolves it per request without caching the secret.
+- It makes one HTTPS call every five minutes to the provider's official
+  GET /user/balance endpoint and sends nothing else anywhere.
+- It writes balance samples (numbers only, never the key) to the storage
+  hub's json backend unit usage_cost.
 
 ## Supported Versions
 

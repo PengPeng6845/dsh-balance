@@ -1,7 +1,7 @@
-// Standalone unit smoke test for the zero-dep modules of dsh-usage-cost.
+// Standalone unit smoke test for the zero-dep modules of @pengpeng6845/dsh-balance.
 // Run with: node test/smoke.mjs (no install step required).
-import { DEFAULT_PRICES, computeCost, displayValue, isPeak, resolveRate, totalTokens, moneyText, roundMoney } from "../lib/pricing.js";
 import { AggregateStore, dateKey } from "../lib/store.js";
+import { BalanceClient } from "../lib/balance.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -10,53 +10,41 @@ function check(label, actual, expected) {
   console.log((ok ? "PASS " : "FAIL ") + label + ": " + JSON.stringify(actual) + (ok ? "" : " (expected " + JSON.stringify(expected) + ")"));
 }
 
-// rate resolution: exact model, provider fallback, wildcard
-const byModel = resolveRate(DEFAULT_PRICES, "deepseek", "deepseek-v4-pro");
-check("resolve by model", byModel.key, "deepseek-v4-pro");
-check("pro output rate", byModel.outputPerMillion, 1.98);
-const byProvider = resolveRate({ "my-provider": { inputPerMillion: 1, outputPerMillion: 3 } }, "my-provider", "unknown-model");
-check("resolve by provider", byProvider.key, "my-provider");
-const byWildcard = resolveRate({}, "other", "other-model");
-check("resolve wildcard fallback", byWildcard.key, "*");
+// ---- store: fake kv backend ----
+function fakeStorage(initialGlobal) {
+  const box = { global: initialGlobal ?? null, writes: [], closed: false };
+  return {
+    storage: {
+      backend: {
+        get: () => ({
+          kv: {
+            open: async () => ({
+              loadAll: async () => ({ tables: {}, global: box.global }),
+              setGlobal: async (v) => { box.global = v; box.writes.push(v); },
+              close: async () => { box.closed = true; },
+            }),
+          },
+        }),
+      },
+    },
+    box,
+  };
+}
 
-// peak windows: UTC 01-04 and 06-10 are peak, everything else is half
-check("peak hour 07 UTC", isPeak(Date.UTC(2026, 7, 20, 7, 0, 0)), true);
-check("off-peak hour 05 UTC", isPeak(Date.UTC(2026, 7, 20, 5, 0, 0)), false);
-check("off-peak hour 12 UTC", isPeak(Date.UTC(2026, 7, 20, 12, 0, 0)), false);
-
-// cost math, v4-flash: 1M miss + 2M output, off-peak (05:00 UTC)
-const buckets = { uncachedInputTokens: 1000000, outputTokens: 2000000, cacheReadTokens: 0, cacheWriteTokens: 0 };
-const rate = resolveRate(DEFAULT_PRICES, "deepseek", "deepseek-v4-flash");
-const offPeakAt = Date.UTC(2026, 7, 20, 5, 0, 0);
-const cost = computeCost(buckets, rate, offPeakAt);
-check("off-peak input cost", roundMoney(cost.inputCost), 0.22);
-check("off-peak output cost", roundMoney(cost.outputCost), 1.32);
-check("off-peak total cost", roundMoney(cost.totalCost), 1.54);
-const peakAt = Date.UTC(2026, 7, 20, 7, 0, 0);
-const peakCost = computeCost(buckets, rate, peakAt);
-check("peak total cost doubles", roundMoney(peakCost.totalCost), 3.08);
-check("fx display CNY", roundMoney(displayValue(1.54, "CNY", 7.2)), 11.088);
-check("fx display USD unchanged", displayValue(1.54, "USD", 7.2), 1.54);
-check("cost text", moneyText(displayValue(1.54, "CNY", 7.2), "CNY"), "¥11.0880");
-
-// aggregate store: monotonic deltas, day/month keys, idempotent replay
-const store = new AggregateStore();
-const t0 = new Date(2026, 7, 14, 10, 0, 0);
-const e0 = { ...buckets, cost: cost.totalCost };
-const r0 = store.record("sess-1", e0, t0);
-check("first record today tokens", totalTokens(r0.today), totalTokens(buckets));
-check("first record month key", dateKey(t0).slice(0, 7), "2026-08");
-const e1 = { uncachedInputTokens: 1200000, outputTokens: 2000000, cacheReadTokens: 0, cacheWriteTokens: 0, cost: cost.totalCost + 0.4 };
-const r1 = store.record("sess-1", e1, t0);
-check("delta tokens", totalTokens(r1.today) - totalTokens(r0.today), 200000);
-check("delta cost", roundMoney(r1.today.cost - r0.today.cost), 0.4);
-const r2 = store.record("sess-1", e1, t0);
-check("replay idempotent tokens", totalTokens(r2.today), totalTokens(r1.today));
-check("replay idempotent cost", roundMoney(r2.today.cost), roundMoney(r1.today.cost));
-const r3 = store.record("sess-2", e0, new Date(2026, 7, 15, 9, 0, 0));
-check("second day separate", totalTokens(r3.today), totalTokens(buckets));
-check("month accumulates across days", totalTokens(r3.month), totalTokens(r1.today) + totalTokens(buckets));
-check("dateKey pad", dateKey(new Date(2026, 0, 5)), "2026-01-05");
+// migration: v2 record keeps balance samples, drops estimate tables
+const legacy = {
+  last: { s1: { uncachedInputTokens: 1 } },
+  days: { "2026-08-20": { cost: 3 } },
+  months: {},
+  balanceSamples: [{ at: 1700000000000, total: 15.05 }],
+  schemaVersion: 2,
+};
+const migrated = new AggregateStore();
+await migrated.init(fakeStorage(legacy).storage);
+check("migration keeps samples", migrated.state.balanceSamples.length, 1);
+check("migration sample total", migrated.state.balanceSamples[0].total, 15.05);
+check("migration drops estimates", migrated.state.days, undefined);
+check("migration stamps v3", migrated.state.schemaVersion, 3);
 
 // balance samples: real spend = sum of drops; top-ups never count
 const bal = new AggregateStore();
@@ -69,9 +57,103 @@ bal.recordBalance(159.9, t3); // top-up: rise must not count
 check("balance real spend", bal.realTodaySpend(new Date(2026, 7, 20, 12, 0, 0)), 0.1);
 bal.recordBalance(159.8, Date.parse("2026-08-20T12:00:00"));
 check("balance spend after top-up", bal.realTodaySpend(new Date(2026, 7, 20, 12, 30, 0)), 0.2);
+bal.recordBalance(159.8, Date.parse("2026-08-20T12:05:00"));
 check("unchanged sample replaces time", bal.state.balanceSamples.length, 4);
+check("dateKey pad", dateKey(new Date(2026, 0, 5)), "2026-01-05");
 
-// index module loads and exposes the plugin contract
+// persist + close flush
+const ps = fakeStorage({ balanceSamples: [], schemaVersion: 3 });
+const pst = new AggregateStore();
+await pst.init(ps.storage);
+pst.recordBalance(10, Date.now());
+pst.persist();
+await pst.chain;
+check("persist wrote global", ps.box.writes.length, 1);
+check("persist stamped v3", ps.box.writes[0].schemaVersion, 3);
+pst.close();
+await pst.chain;
+check("close closes unit", ps.box.closed, true);
+
+// ---- balance client ----
+function fakeCtx(resolveImpl) {
+  return { get: (n) => (n === "credentials" ? { resolve: resolveImpl } : undefined) };
+}
+const cfg = { balanceBaseUrl: "https://api.deepseek.com", balanceApiKeyEnv: "DEEPSEEK_API_KEY", balanceRefreshMs: 300000 };
+
+let fetchCalls = 0;
+const okFetch = async () => {
+  fetchCalls += 1;
+  return {
+    ok: true,
+    json: async () => ({
+      is_available: true,
+      balance_infos: [
+        { currency: "USD", total_balance: "0.00", granted_balance: "0", topped_up_balance: "0" },
+        { currency: "CNY", total_balance: "12.29", granted_balance: "0", topped_up_balance: "12.29" },
+      ],
+    }),
+  };
+};
+
+const client = new BalanceClient(cfg, fakeCtx(async () => ({ value: "secret" })), okFetch);
+const first = await client.check(true);
+check("balance picks funded bucket", first.currency, "CNY");
+check("balance total", first.totalBalance, 12.29);
+const second = await client.check(false);
+check("balance cached", fetchCalls, 1);
+check("balance cache hit", second.totalBalance, 12.29);
+
+// in-flight dedup: two concurrent checks share one request
+let inflightCalls = 0;
+let release;
+const slowFetch = () => {
+  inflightCalls += 1;
+  return new Promise((resolve) => {
+    release = () => resolve({ ok: true, json: async () => ({ balance_infos: [{ currency: "CNY", total_balance: "9" }] }) });
+  });
+};
+const dedup = new BalanceClient({ ...cfg, balanceRefreshMs: 1 }, fakeCtx(async () => ({ value: "secret" })), slowFetch);
+const p1 = dedup.check(true);
+const p2 = dedup.check(true);
+await new Promise((resolve) => setTimeout(resolve, 10)); // let the fetch start
+release();
+await Promise.all([p1, p2]);
+check("in-flight dedup", inflightCalls, 1);
+
+// failure backoff: no retry inside the window, stale cache still served
+let failCalls = 0;
+const failThenOk = async () => {
+  failCalls += 1;
+  if (failCalls === 1) throw new Error("network");
+  return { ok: true, json: async () => ({ balance_infos: [{ currency: "CNY", total_balance: "8" }] }) };
+};
+const retry = new BalanceClient({ ...cfg, balanceRefreshMs: 0 }, fakeCtx(async () => ({ value: "secret" })), failThenOk);
+check("failure returns null", await retry.check(true), null);
+const staleProbe = await retry.check(false);
+check("backoff serves null without cache", staleProbe, null);
+check("backoff window set", retry.nextAttemptAt > Date.now(), true);
+
+// stale cache served during backoff
+let staleCalls = 0;
+const staleThenFail = async () => {
+  staleCalls += 1;
+  if (staleCalls === 1) {
+    return { ok: true, json: async () => ({ balance_infos: [{ currency: "CNY", total_balance: "7" }] }) };
+  }
+  throw new Error("down");
+};
+const st = new BalanceClient({ ...cfg, balanceRefreshMs: 0 }, fakeCtx(async () => ({ value: "secret" })), staleThenFail);
+await st.check(true); // success, caches 7
+await st.check(true); // fail, arms backoff
+const staleValue = await st.check(false);
+check("stale served during backoff", staleValue.totalBalance, 7);
+check("stale flagged", staleValue.stale, true);
+
+// missing credentials -> null without fetch
+const noKey = new BalanceClient(cfg, fakeCtx(async () => undefined), okFetch);
+check("no key returns null", await noKey.check(true), null);
+
+// ---- plugin contract ----
 const mod = await import("../lib/index.js");
 check("plugin name", mod.name, "balance");
 check("plugin inject", JSON.stringify(mod.inject), JSON.stringify(["tools", "timer"]));

@@ -3,8 +3,9 @@
  *
  * Hand-written __ModuleLoader__ bundle (no build step). The widget
  * registers into the sidebar.footer.action list slot, polls
- * GET /dsh-balance/summary every 30 seconds, and shows ONLY the real
- * account balance from the official /user/balance endpoint.
+ * GET /dsh-balance/summary every 30 seconds (paused while the tab is
+ * hidden), and shows ONLY the real account balance from the official
+ * /user/balance endpoint.
  *
  * Visual language matches the native sidebar rows: flat, no card — 8px
  * radius, 0 8px padding, hover-only background, --dsw-alias-* tokens.
@@ -30,6 +31,8 @@ window.__ModuleLoader__.load({
       ".ub-row:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(128,128,128,.08))}",
       ".ub-label{flex:1;min-width:0;color:var(--dsw-alias-label-secondary,rgba(128,128,128,.85))}",
       ".ub-value{font-variant-numeric:tabular-nums;font-weight:600}",
+      ".ub-value.ub-warn{color:var(--dsw-alias-state-warn-primary,#d97706)}",
+      ".ub-value.ub-stale{opacity:.55}",
       ".ub-compact{justify-content:center;padding:0 6px}",
     ].join("\n");
 
@@ -52,11 +55,19 @@ window.__ModuleLoader__.load({
       return symbol + (Number(n) || 0).toFixed(2);
     }
 
+    function valueClass(data) {
+      var classes = "";
+      if (data && data.lowBalance === true) classes += " ub-warn";
+      if (data && data.balance && data.balance.stale === true) classes += " ub-stale";
+      return classes;
+    }
+
     function BalanceWidget(props) {
       var wide = !(props && props.wide === false);
       var state = React.useState(null);
       var data = state[0];
       var setData = state[1];
+      var settled = React.useRef(false);
 
       React.useEffect(function () {
         var stop = false;
@@ -67,23 +78,47 @@ window.__ModuleLoader__.load({
               return resp.json();
             })
             .then(function (json) {
-              if (!stop && json && typeof json === "object") setData(json);
+              if (stop || !json || typeof json !== "object") return;
+              settled.current = true;
+              setData(json);
             })
             .catch(function () {});
         }
+        function onVisibility() {
+          if (document.hidden) return;
+          load();
+        }
         load();
-        var id = setInterval(load, 30000);
+        var id = setInterval(function () {
+          if (!document.hidden) load();
+        }, 30000);
+        document.addEventListener("visibilitychange", onVisibility);
         return function () {
           stop = true;
           clearInterval(id);
+          document.removeEventListener("visibilitychange", onVisibility);
         };
       }, []);
 
-      if (!data || !data.balance) {
+      var pending = !settled.current && !data;
+
+      if (pending) {
         return React.createElement(
           "div",
           { className: "ub-row", title: "@pengpeng6845/dsh-balance" },
           React.createElement("span", { className: "ub-label" }, wide ? "余额查询中…" : "…"),
+        );
+      }
+
+      var unavailable = !data || !data.balance;
+      if (unavailable) {
+        return React.createElement(
+          "div",
+          {
+            className: "ub-row",
+            title: "余额不可用：检查 DEEPSEEK_API_KEY 是否已配置（凭据环境变量），或网络是否可达",
+          },
+          React.createElement("span", { className: "ub-label" }, wide ? "余额不可用" : "—"),
         );
       }
 
@@ -93,6 +128,12 @@ window.__ModuleLoader__.load({
       if (typeof data.realTodayCost === "number" && data.realTodayCost > 0) {
         title += " · 今日实际 " + money(data.realTodayCost, bal.currency);
       }
+      if (data.lowBalance === true) {
+        title += " · 余额低于警戒线 " + money(data.lowBalanceThreshold, bal.currency);
+      }
+      if (bal.stale === true) {
+        title += " · 数据过期（上次成功更新的值）";
+      }
       if (bal.checkedAt) {
         title += " · 更新于 " + new Date(bal.checkedAt).toLocaleTimeString();
       }
@@ -101,7 +142,7 @@ window.__ModuleLoader__.load({
         return React.createElement(
           "div",
           { className: "ub-row ub-compact", title: title },
-          React.createElement("span", { className: "ub-value" }, valueText),
+          React.createElement("span", { className: "ub-value" + valueClass(data) }, valueText),
         );
       }
 
@@ -109,7 +150,7 @@ window.__ModuleLoader__.load({
         "div",
         { className: "ub-row", title: title },
         React.createElement("span", { className: "ub-label" }, "余额"),
-        React.createElement("span", { className: "ub-value" }, valueText),
+        React.createElement("span", { className: "ub-value" + valueClass(data) }, valueText),
       );
     }
 

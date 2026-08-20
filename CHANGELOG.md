@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-08-20
+
+### Changed
+
+- Estimate engine removed entirely (pricing table, passive projection
+  fold, day/month aggregates): the plugin is now a single-purpose balance
+  monitor. token_usage reports exact provider token buckets plus the real
+  balance — no estimated money anywhere.
+- BalanceClient hardened: in-flight request dedup, exponential backoff on
+  failure (60s doubling to 5m), stale-cache serving during backoff with a
+  stale flag.
+- Widget state machine: 查询中 → 余额/不可用/过期(灰化); polling pauses
+  while the tab is hidden; low balance (below lowBalanceAlert, default 5)
+  tints the value orange.
+- Storage schemaVersion 3: balance samples only (estimate tables dropped
+  on migration; samples survive).
+- Config: lowBalanceAlert added; currency/prices/fxRate/thresholds
+  removed.
+
 ## [0.5.0] - 2026-08-20
 
 ### Changed
