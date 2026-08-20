@@ -57,12 +57,16 @@ GitHub 直装（未发布 npm 时）：
 | balanceBaseUrl | string | https://api.deepseek.com | 余额 API 基地址 |
 | balanceRefreshMs | number | 300000 | 余额轮询/缓存间隔（毫秒） |
 
-内置价格表（CNY / 1M tokens，会随时间调整，记得按官网更新）：
+内置价格表（USD / 1M tokens，谷时价；峰时 UTC 01-04 与 06-10 各档 ×2；
+显示为 CNY 时按 fxRate 折算，默认 7.2；以官方价格页为准）：
 
 | 模型 | 输入(未命中) | 缓存读 | 缓存写 | 输出 |
 | --- | --- | --- | --- | --- |
-| deepseek-chat | 2 | 0.5 | 2 | 8 |
-| deepseek-reasoner | 4 | 1 | 4 | 16 |
+| deepseek-v4-flash | 0.22 | 0.007 | 0.22 | 0.66 |
+| deepseek-v4-pro | 0.66 | 0.022 | 0.66 | 1.98 |
+| "*" (兜底) | 0.22 | 0.007 | 0.22 | 0.66 |
+
+新增配置：fxRate（CNY 折算汇率，默认 7.2）。余额核实的数据（真实账户余额与今日实际花费）不受汇率影响，直接以账户币种显示。
 
 ## 开发
 

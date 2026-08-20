@@ -54,12 +54,16 @@ Override in your profile's cordis.patch.yml:
 | warnThreshold | number | 5 | Today-cost level that tints the widget orange |
 | alertThreshold | number | 20 | Today-cost level that tints the widget red |
 
-Builtin price table (CNY per 1M tokens; check the provider's official page and update over time):
+Builtin price table (USD per 1M tokens, off-peak rates; peak windows UTC 01-04 and 06-10 double every tier; CNY display multiplies by fxRate, default 7.2; the official pricing page is authoritative):
 
 | Model | Input (miss) | Cache read | Cache write | Output |
 | --- | --- | --- | --- | --- |
-| deepseek-chat | 2 | 0.5 | 2 | 8 |
-| deepseek-reasoner | 4 | 1 | 4 | 16 |
+| deepseek-v4-flash | 0.22 | 0.007 | 0.22 | 0.66 |
+| deepseek-v4-pro | 0.66 | 0.022 | 0.66 | 1.98 |
+| "*" (fallback) | 0.22 | 0.007 | 0.22 | 0.66 |
+
+Balance-verified figures (real account balance and real today spend) are
+shown in the account currency and never go through fxRate.
 
 ## Development
 

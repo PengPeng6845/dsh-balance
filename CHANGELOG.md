@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-08-20
+
+### Changed (breaking for persisted estimates)
+
+- Pricing table replaced with the official 2026-08-16 peak/off-peak rates:
+  v4-flash off-peak hit $0.007 / miss $0.22 / output $0.66, v4-pro $0.022 /
+  $0.66 / $1.98; peak windows (UTC 01-04, 06-10) double every rate. The
+  previous builtin table (legacy v3-era prices) overstated cache-read cost
+  by ~70x — real balance verification (¥15.05 vs estimated ¥25.08/day)
+  exposed the drift.
+- Table currency is USD; fxRate (default 7.2) converts to the display
+  currency (CNY). Store cells keep table currency; conversion happens at
+  display time.
+- Persisted estimates from pre-0.4.0 versions reset on load (token
+  history cannot be repriced per day); balance samples are kept — they
+  are real provider money. Unit schemaVersion is now stamped as 2.
+- rateLabel now carries a peak/off-peak marker.
+
 ## [0.3.0] - 2026-08-20
 
 ### Added
