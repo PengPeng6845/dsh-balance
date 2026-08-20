@@ -1,35 +1,81 @@
 # dsh-usage-cost
 
-Token 消耗与 API 成本报表插件（DeepSeek Harness 社区插件）。发布到 GitHub 的仓库根目录。
+[![npm](https://img.shields.io/npm/v/dsh-usage-cost)](https://www.npmjs.com/package/dsh-usage-cost)
+[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-usage-cost/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-usage-cost/actions)
+[![license](https://img.shields.io/github/license/PengPeng6845/dsh-usage-cost)](LICENSE)
 
-- packages/dsh-usage-cost/ — 插件本体（零依赖社区形态）
-  - lib/index.js：插件主体（name / inject / apply），注册 token_usage 模型工具
-  - lib/pricing.js：价格表 + 计价纯函数（内置 DeepSeek 官方价，配置合并覆盖）
-  - lib/store.js：日/月累计增量聚合 → storage json 后端（usage_cost 单元），缺失降级内存
-  - cordis.patch.yml：bundle 补丁层（insert 插件条目 + 配置示例注释）
-  - test/smoke.mjs：零安装单元冒烟测试（npm test，CI 在 Node 20/22 运行）
-  - LICENSE / SECURITY.md / CHANGELOG.md：开源发布三件套
-- .github/workflows/ci.yml — GitHub Actions（push/PR 触发）
-- .gitignore — 排除 node_modules / tarball / 本地测试目录 .dsh-test
+Token consumption and API cost reporting for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): prices the built-in tokenUsage session projection against a configurable per-model table, folds day/month aggregates into the storage hub, and registers the model-facing token_usage tool.
 
-## 本地验证记录
+[中文说明](README.zh.md)
 
-- npm test：21 项断言全过
-- 隔离 DSH_HOME（.dsh-test，不在 git 里）：--dump-config 组合通过；web 实例 3099 端口启动正常；
-  headless 实例真实调用 token_usage 返回 provider 上报用量与成本
+## Features
 
-## 发布到 GitHub（在仓库根目录执行）
+- **token_usage tool** — the model can check its own consumption mid-task: provider-reported buckets (uncached input / output / cache read / cache write), this session's cost, plus today's and this month's accumulated cost.
+- **Real billing data** — reads the tokenUsage projection first (provider-reported, not heuristic); falls back to the token-meter anchor; returns zeros with a note when neither exists.
+- **Durable aggregates** — deltas fold into the storage hub's json backend unit usage_cost; degrades to in-memory when the backend is absent. Idempotent by construction (clamped deltas, replayed calls never double-count).
+- **Per-model pricing** — lookup order: model id, then provider route, then the "*" fallback entry. Builtin DeepSeek official rates, merged with your config.
+- **Zero dependencies** — no npm runtime dependencies, no build step; plain ESM, community-plugin shape (name / inject / apply).
 
-    git remote add origin https://github.com/PengPeng6845/dsh-usage-cost.git
-    git branch -M main
-    git push -u origin main
+## Install
 
-## 发布到 npm
+From npm (recommended):
 
-    cd packages/dsh-usage-cost
-    npm login        # 首次需要
-    npm publish
+    dsh plugin --profile web add dsh-usage-cost
 
-## 上架插件市场
+From GitHub (unpublished):
 
-到 awesome-dsh-plugin 仓库提 PR，把本仓库加进列表（见包内 README）。
+    dsh plugin --profile web add github:PengPeng6845/dsh-usage-cost
+
+Then append "dsh-usage-cost" to dsh.profile.bundles in your profile's package.json and restart dsh web (or refresh the page if HMR is enabled).
+
+Or through the in-app plugin market once the package is listed on awesome-dsh-plugin (see below).
+
+## Config
+
+Override in your profile's cordis.patch.yml:
+
+    - id: usage-cost
+      config:
+        currency: CNY          # CNY / USD / EUR
+        persist: true          # persist day/month aggregates
+        prices:                # merges over the builtin table
+          deepseek-chat:
+            inputPerMillion: 2
+            cacheReadPerMillion: 0.5
+            cacheWritePerMillion: 2
+            outputPerMillion: 8
+
+| Key | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| currency | string | CNY | Currency symbol used in cost text |
+| persist | boolean | true | Persist day/month aggregates to the storage json backend |
+| prices | map | DeepSeek official rates | Price per 1M tokens, keyed by model id, provider route, or "*" |
+
+Builtin price table (CNY per 1M tokens; check the provider's official page and update over time):
+
+| Model | Input (miss) | Cache read | Cache write | Output |
+| --- | --- | --- | --- | --- |
+| deepseek-chat | 2 | 0.5 | 2 | 8 |
+| deepseek-reasoner | 4 | 1 | 4 | 16 |
+
+## Development
+
+    npm test          # zero-install unit smoke suite (node test/smoke.mjs)
+    npm pack          # produce the distributable tarball
+
+The test suite runs on Node 20 and 22 in CI with no install step.
+
+## Release
+
+    npm login         # once
+    npm publish       # then users run: dsh plugin --profile web add dsh-usage-cost
+
+The package lives at the repository root on purpose: single-package layout so both npm installs and github: installs resolve the plugin directly.
+
+## Get listed in the plugin market
+
+The dsh-market registry is curated through [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin). Open a PR adding one entry for this repository to the list; the website and the in-app market pick it up automatically (usually within a day).
+
+## License
+
+[MIT](LICENSE) © 2026 PengPeng6845
