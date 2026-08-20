@@ -1,6 +1,6 @@
 {
-  "name": "dsh-usage-cost",
-  "description": "Token consumption and API cost reporting for the DeepSeek Harness: cost math over the tokenUsage projection, durable day/month aggregates, and the model-facing token_usage tool",
+  "name": "@pengpeng6845/dsh-balance",
+  "description": "Real API balance monitoring for the DeepSeek Harness: polls the official /user/balance endpoint with your API key and shows the true remaining balance in the sidebar",
   "version": "0.4.0",
   "type": "module",
   "main": "lib/index.js",

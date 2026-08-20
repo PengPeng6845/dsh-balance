@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-08-20
+
+### Changed
+
+- Renamed to @pengpeng6845/dsh-balance (plugin id balance; bundle entry
+  name updated accordingly). The GitHub repo path stays the same.
+- The sidebar widget now shows ONLY the real account balance from the
+  official /user/balance endpoint (updated every 30s; tooltip carries
+  today's real spend from balance drops and the check time). Estimated
+  cost rows and threshold coloring are gone.
+- The summary endpoint is now GET /dsh-balance/summary and returns
+  balance + realTodayCost only.
+- Config: warnThreshold/alertThreshold removed. The token_usage tool
+  still reports provider tokens plus the real balance; estimated money is
+  reported as secondary information only.
+
 ## [0.4.0] - 2026-08-20
 
 ### Changed (breaking for persisted estimates)

@@ -1,0 +1,18 @@
+{
+  "name": "dsh-profile-web",
+  "private": true,
+  "dependencies": {
+    "dshmarket": "^1.15.0",
+    "@pengpeng6845/dsh-balance": "github:PengPeng6845/dsh-usage-cost"
+  },
+  "dsh": {
+    "profile": {
+      "bundles": [
+        "@deepseek-ai/dsh-base",
+        "@deepseek-ai/dsh-web-app",
+        "dshmarket",
+        "@pengpeng6845/dsh-balance"
+      ]
+    }
+  }
+}

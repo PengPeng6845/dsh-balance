@@ -73,9 +73,9 @@ check("unchanged sample replaces time", bal.state.balanceSamples.length, 4);
 
 // index module loads and exposes the plugin contract
 const mod = await import("../lib/index.js");
-check("plugin name", mod.name, "usage-cost");
+check("plugin name", mod.name, "balance");
 check("plugin inject", JSON.stringify(mod.inject), JSON.stringify(["tools", "timer"]));
-check("default export name", mod.default?.name, "usage-cost");
+check("default export name", mod.default?.name, "balance");
 check("apply is function", typeof mod.apply, "function");
 
 console.log(failures === 0 ? "\nALL PASS" : "\n" + failures + " FAILURES");

@@ -1,69 +1,50 @@
-# dsh-usage-cost
+# @pengpeng6845/dsh-balance
 
-[![npm](https://img.shields.io/npm/v/dsh-usage-cost)](https://www.npmjs.com/package/dsh-usage-cost)
 [![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-usage-cost/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-usage-cost/actions)
 [![license](https://img.shields.io/github/license/PengPeng6845/dsh-usage-cost)](LICENSE)
 
-Token consumption and API cost reporting for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): prices the built-in tokenUsage session projection against a configurable per-model table, folds day/month aggregates into the storage hub, and registers the model-facing token_usage tool.
+Real API balance in the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) sidebar: polls the official /user/balance endpoint with your API key and shows only real, verifiable numbers — no estimates.
 
 [中文说明](README.zh.md)
 
 ## Features
 
-- **token_usage tool** — the model can check its own consumption mid-task: provider-reported buckets (uncached input / output / cache read / cache write), this session's cost, plus today's and this month's accumulated cost.
-- **Real billing data** — reads the tokenUsage projection first (provider-reported, not heuristic); falls back to the token-meter anchor; returns zeros with a note when neither exists.
-- **Durable aggregates** — deltas fold into the storage hub's json backend unit usage_cost; degrades to in-memory when the backend is absent. Idempotent by construction (clamped deltas, replayed calls never double-count).
-- **Per-model pricing** — lookup order: model id, then provider route, then the "*" fallback entry. Builtin DeepSeek official rates, merged with your config.
-- **Sidebar cost widget** — a live "API 成本" card in the sidebar footer showing today/month cost and token counts, tinted orange/red past configurable thresholds; aggregates update continuously from the projection change feed (no tool call needed).
-- **Zero dependencies** — no npm runtime dependencies, no build step; plain ESM host plugin plus a hand-written client bundle (name / inject / apply).
+- **Sidebar balance widget** — one flat native-style row "余额 ¥13.94" in the sidebar footer, refreshed every 30s; tooltip carries today's real spend (sum of balance drops) and the check time; the collapsed rail shows just the amount.
+- **API-key verified** — the balance comes from the official endpoint (real billing data). Drops between samples are real spend; top-up rises never count.
+- **token_usage tool** — kept as a bonus: the model can self-report exact provider token buckets plus the real balance; estimated money is secondary only.
+- **Zero dependencies** — no npm runtime deps, no build step; plain ESM host plus a hand-written client bundle.
 
 ## Install
 
-From npm (recommended):
+From npm (once published):
 
-    dsh plugin --profile web add dsh-usage-cost
+    dsh plugin --profile web add @pengpeng6845/dsh-balance
 
-From GitHub (unpublished):
+From GitHub:
 
     dsh plugin --profile web add github:PengPeng6845/dsh-usage-cost
 
-Then append "dsh-usage-cost" to dsh.profile.bundles in your profile's package.json and restart dsh web (or refresh the page if HMR is enabled).
-
-Or through the in-app plugin market once the package is listed on awesome-dsh-plugin (see below).
+Then make sure "@pengpeng6845/dsh-balance" is in dsh.profile.bundles in your profile's package.json and restart dsh web.
 
 ## Config
 
 Override in your profile's cordis.patch.yml:
 
-    - id: usage-cost
+    - id: balance
       config:
-        currency: CNY          # CNY / USD / EUR
-        persist: true          # persist day/month aggregates
-        prices:                # merges over the builtin table
-          deepseek-chat:
-            inputPerMillion: 2
-            cacheReadPerMillion: 0.5
-            cacheWritePerMillion: 2
-            outputPerMillion: 8
+        balanceEnabled: true
+        balanceApiKeyEnv: DEEPSEEK_API_KEY
+        balanceBaseUrl: https://api.deepseek.com
+        balanceRefreshMs: 300000
 
 | Key | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| currency | string | CNY | Currency symbol used in cost text |
-| persist | boolean | true | Persist day/month aggregates to the storage json backend |
-| prices | map | DeepSeek official rates | Price per 1M tokens, keyed by model id, provider route, or "*" |
-| warnThreshold | number | 5 | Today-cost level that tints the widget orange |
-| alertThreshold | number | 20 | Today-cost level that tints the widget red |
+| balanceEnabled | boolean | true | Poll the official balance endpoint |
+| balanceApiKeyEnv | string | DEEPSEEK_API_KEY | Credential-ref env name holding the API key |
+| balanceBaseUrl | string | https://api.deepseek.com | Balance API base |
+| balanceRefreshMs | number | 300000 | Balance poll interval (ms) |
 
-Builtin price table (USD per 1M tokens, off-peak rates; peak windows UTC 01-04 and 06-10 double every tier; CNY display multiplies by fxRate, default 7.2; the official pricing page is authoritative):
-
-| Model | Input (miss) | Cache read | Cache write | Output |
-| --- | --- | --- | --- | --- |
-| deepseek-v4-flash | 0.22 | 0.007 | 0.22 | 0.66 |
-| deepseek-v4-pro | 0.66 | 0.022 | 0.66 | 1.98 |
-| "*" (fallback) | 0.22 | 0.007 | 0.22 | 0.66 |
-
-Balance-verified figures (real account balance and real today spend) are
-shown in the account currency and never go through fxRate.
+Balance is displayed in the account currency with no FX conversion.
 
 ## Development
 
@@ -72,16 +53,9 @@ shown in the account currency and never go through fxRate.
 
 The test suite runs on Node 20 and 22 in CI with no install step.
 
-## Release
-
-    npm login         # once
-    npm publish       # then users run: dsh plugin --profile web add dsh-usage-cost
-
-The package lives at the repository root on purpose: single-package layout so both npm installs and github: installs resolve the plugin directly.
-
 ## Get listed in the plugin market
 
-The dsh-market registry is curated through [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin). Open a PR adding one entry for this repository to the list; the website and the in-app market pick it up automatically (usually within a day).
+Open a PR adding this repository to [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin).
 
 ## License
 

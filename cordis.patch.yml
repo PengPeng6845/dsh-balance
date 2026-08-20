@@ -25,5 +25,5 @@
 # A user-provided "prices" map MERGES over the builtin table, so partial
 # overrides are fine.
 - insert:
-    - id: usage-cost
-      name: 'dsh-usage-cost'
+    - id: balance
+      name: '@pengpeng6845/dsh-balance'
