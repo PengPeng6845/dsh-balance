@@ -10,6 +10,7 @@
 - **侧边栏余额小组件**：侧边栏底部一行扁平原生样式「余额 ¥13.94」，每 30 秒刷新；悬停显示今日实际花费（余额差）与更新时间；侧边栏折叠时只显示金额。
 - **API key 核实**：余额来自官方端点（真实账单数据）；余额下降即花费（充值上涨自动忽略），两次采样之间下降值 = 真实消费。
 - **token_usage 工具**：附带保留——模型可自查 provider 上报的 token 分桶（精确）与真实余额；不含任何估算金额。
+- **中英双语**：文案注册在客户端 locale 服务上，跟随界面语言自动切换（默认中文）。
 - **零依赖**：无 npm 运行时依赖、无构建步骤；Host 纯 ESM，Client 手写 bundle。
 
 ## 安装
@@ -46,10 +47,19 @@ GitHub 直装：
 
 余额以账户币种显示，不经过任何汇率换算。
 
-## 开发
+## 开发与发布
 
     npm test          # 零安装单元冒烟测试（node test/smoke.mjs）
     npm pack          # 生成可分发 tarball
+
+一键发版（更新版本号 + CHANGELOG + 提交 + tag + 推送；设置 GH_TOKEN 还会自动建 GitHub Release）：
+
+    npm run release -- 0.7.1 "修复 xxx"
+
+发布到 npm：
+
+    npm login         # 首次需要
+    npm publish       # 发布后别人可 dsh plugin add @pengpeng6845/dsh-balance
 
 CI 在 Node 20 / 22 上运行同一套测试，无需安装步骤。
 

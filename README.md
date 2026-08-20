@@ -12,6 +12,7 @@ Real API balance in the [DeepSeek Harness](https://github.com/deepseek-ai/deepse
 - **Sidebar balance widget** — one flat native-style row "余额 ¥13.94" in the sidebar footer, refreshed every 30s; tooltip carries today's real spend (sum of balance drops) and the check time; the collapsed rail shows just the amount.
 - **API-key verified** — the balance comes from the official endpoint (real billing data). Drops between samples are real spend; top-up rises never count.
 - **token_usage tool** — kept as a bonus: the model can self-report exact provider token buckets plus the real balance; no estimated money anywhere.
+- **zh/en i18n** — widget texts ride the client locale service and follow the UI language (Chinese fallback).
 - **Zero dependencies** — no npm runtime deps, no build step; plain ESM host plus a hand-written client bundle.
 
 ## Install
@@ -48,10 +49,20 @@ Override in your profile's cordis.patch.yml:
 
 Balance is displayed in the account currency with no FX conversion.
 
-## Development
+## Development & release
 
     npm test          # zero-install unit smoke suite (node test/smoke.mjs)
     npm pack          # produce the distributable tarball
+
+One-command release (version bump + CHANGELOG + commit + tag + push;
+export GH_TOKEN to also create the GitHub Release):
+
+    npm run release -- 0.7.1 "Fix something"
+
+Publish to npm:
+
+    npm login         # once
+    npm publish       # then users can dsh plugin add @pengpeng6845/dsh-balance
 
 The test suite runs on Node 20 and 22 in CI with no install step.
 

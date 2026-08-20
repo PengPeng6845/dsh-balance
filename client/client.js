@@ -5,7 +5,7 @@
  * registers into the sidebar.footer.action list slot, polls
  * GET /dsh-balance/summary every 15 seconds (paused while the tab is
  * hidden), and shows ONLY the real account balance from the official
- * /user/balance endpoint.
+ * /user/balance endpoint. Texts ride the locale service (zh/en).
  *
  * Visual language matches the native sidebar rows: flat, no card — 8px
  * radius, 0 8px padding, hover-only background, --dsw-alias-* tokens.
@@ -22,6 +22,32 @@ window.__ModuleLoader__.load({
 
     var name = "balance";
     var inject = ["slots"];
+    var NS = "@pengpeng6845/dsh-balance";
+
+    var DICTS = {
+      zh: {
+        label: "余额",
+        loading: "查询中…",
+        unavailable: "不可用",
+        title: "API 真实余额",
+        today: "今日实际",
+        low: "余额低于警戒线",
+        stale: "数据过期（上次成功更新的值）",
+        updated: "更新于",
+        unavailableHint: "余额不可用：检查 DEEPSEEK_API_KEY 是否已配置（凭据环境变量），或网络是否可达",
+      },
+      en: {
+        label: "Balance",
+        loading: "Checking…",
+        unavailable: "Unavailable",
+        title: "Real API balance",
+        today: "Today's spend",
+        low: "Below low-balance alert",
+        stale: "Stale (last successful value)",
+        updated: "Updated",
+        unavailableHint: "Balance unavailable: check that DEEPSEEK_API_KEY is configured (credential env var) or that the network is reachable",
+      },
+    };
 
     var CSS = [
       ".ub-wrap{display:flex;flex-direction:column;gap:2px;padding:2px 0}",
@@ -62,107 +88,116 @@ window.__ModuleLoader__.load({
       return classes;
     }
 
-    function BalanceWidget(props) {
-      var wide = !(props && props.wide === false);
-      var state = React.useState(null);
-      var data = state[0];
-      var setData = state[1];
-      var settled = React.useRef(false);
+    function makeWidget(t) {
+      return function BalanceWidget(props) {
+        var wide = !(props && props.wide === false);
+        var state = React.useState(null);
+        var data = state[0];
+        var setData = state[1];
+        var settled = React.useRef(false);
 
-      React.useEffect(function () {
-        var stop = false;
-        function load() {
-          fetch("/dsh-balance/summary")
-            .then(function (resp) {
-              if (!resp.ok) return null;
-              return resp.json();
-            })
-            .then(function (json) {
-              if (stop || !json || typeof json !== "object") return;
-              settled.current = true;
-              setData(json);
-            })
-            .catch(function () {});
-        }
-        function onVisibility() {
-          if (document.hidden) return;
+        React.useEffect(function () {
+          var stop = false;
+          function load() {
+            fetch("/dsh-balance/summary")
+              .then(function (resp) {
+                if (!resp.ok) return null;
+                return resp.json();
+              })
+              .then(function (json) {
+                if (stop || !json || typeof json !== "object") return;
+                settled.current = true;
+                setData(json);
+              })
+              .catch(function () {});
+          }
+          function onVisibility() {
+            if (document.hidden) return;
+            load();
+          }
           load();
+          var id = setInterval(function () {
+            if (!document.hidden) load();
+          }, 15000);
+          document.addEventListener("visibilitychange", onVisibility);
+          return function () {
+            stop = true;
+            clearInterval(id);
+            document.removeEventListener("visibilitychange", onVisibility);
+          };
+        }, []);
+
+        var pending = !settled.current && !data;
+
+        if (pending) {
+          return React.createElement(
+            "div",
+            { className: "ub-row", title: "@pengpeng6845/dsh-balance" },
+            React.createElement("span", { className: "ub-label" }, wide ? t("loading") : "…"),
+          );
         }
-        load();
-        var id = setInterval(function () {
-          if (!document.hidden) load();
-        }, 15000);
-        document.addEventListener("visibilitychange", onVisibility);
-        return function () {
-          stop = true;
-          clearInterval(id);
-          document.removeEventListener("visibilitychange", onVisibility);
-        };
-      }, []);
 
-      var pending = !settled.current && !data;
+        var unavailable = !data || !data.balance;
+        if (unavailable) {
+          return React.createElement(
+            "div",
+            { className: "ub-row", title: t("unavailableHint") },
+            React.createElement("span", { className: "ub-label" }, wide ? t("unavailable") : "—"),
+          );
+        }
 
-      if (pending) {
+        var bal = data.balance;
+        var valueText = money(bal.totalBalance, bal.currency);
+        var title = t("title") + " " + valueText;
+        if (typeof data.realTodayCost === "number" && data.realTodayCost > 0) {
+          title += " · " + t("today") + " " + money(data.realTodayCost, bal.currency);
+        }
+        if (data.lowBalance === true) {
+          title += " · " + t("low") + " " + money(data.lowBalanceThreshold, bal.currency);
+        }
+        if (bal.stale === true) {
+          title += " · " + t("stale");
+        }
+        if (bal.checkedAt) {
+          title += " · " + t("updated") + " " + new Date(bal.checkedAt).toLocaleTimeString();
+        }
+
+        if (!wide) {
+          return React.createElement(
+            "div",
+            { className: "ub-row ub-compact", title: title },
+            React.createElement("span", { className: "ub-value" + valueClass(data) }, valueText),
+          );
+        }
+
         return React.createElement(
           "div",
-          { className: "ub-row", title: "@pengpeng6845/dsh-balance" },
-          React.createElement("span", { className: "ub-label" }, wide ? "余额查询中…" : "…"),
-        );
-      }
-
-      var unavailable = !data || !data.balance;
-      if (unavailable) {
-        return React.createElement(
-          "div",
-          {
-            className: "ub-row",
-            title: "余额不可用：检查 DEEPSEEK_API_KEY 是否已配置（凭据环境变量），或网络是否可达",
-          },
-          React.createElement("span", { className: "ub-label" }, wide ? "余额不可用" : "—"),
-        );
-      }
-
-      var bal = data.balance;
-      var valueText = money(bal.totalBalance, bal.currency);
-      var title = "API 真实余额 " + valueText;
-      if (typeof data.realTodayCost === "number" && data.realTodayCost > 0) {
-        title += " · 今日实际 " + money(data.realTodayCost, bal.currency);
-      }
-      if (data.lowBalance === true) {
-        title += " · 余额低于警戒线 " + money(data.lowBalanceThreshold, bal.currency);
-      }
-      if (bal.stale === true) {
-        title += " · 数据过期（上次成功更新的值）";
-      }
-      if (bal.checkedAt) {
-        title += " · 更新于 " + new Date(bal.checkedAt).toLocaleTimeString();
-      }
-
-      if (!wide) {
-        return React.createElement(
-          "div",
-          { className: "ub-row ub-compact", title: title },
+          { className: "ub-row", title: title },
+          React.createElement("span", { className: "ub-label" }, t("label")),
           React.createElement("span", { className: "ub-value" + valueClass(data) }, valueText),
         );
-      }
-
-      return React.createElement(
-        "div",
-        { className: "ub-row", title: title },
-        React.createElement("span", { className: "ub-label" }, "余额"),
-        React.createElement("span", { className: "ub-value" + valueClass(data) }, valueText),
-      );
+      };
     }
 
     function apply(ctx) {
       var slots = ctx.get("slots");
       if (slots === undefined) return;
+      var locale = ctx.get("locale");
+      var t;
+      if (locale) {
+        ctx.effect(() => locale.register(NS, DICTS));
+        t = locale.bind(NS);
+      } else {
+        t = function (key) {
+          return DICTS.zh[key] ?? key;
+        };
+      }
       ensureCss();
       ctx.effect(function () {
         return slots.inject("sidebar.footer.action", function () {
           return slots.register(
             { name: "sidebar.footer.action", id: "balance" },
-            BalanceWidget,
+            makeWidget(t),
           );
         });
       });

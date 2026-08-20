@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-20
+
+### Added
+
+- i18n: the widget registers zh/en dictionaries on the client locale
+  service and follows the UI language (fallback: Chinese).
+- scripts/release.mjs: one-command release (clean-tree check, version
+  bump, CHANGELOG entry, tests, commit, tag, push, optional GitHub
+  Release via GH_TOKEN).
+
 ## [0.6.1] - 2026-08-20
 
 ### Changed

@@ -1,7 +1,7 @@
 {
   "name": "@pengpeng6845/dsh-balance",
   "description": "Real API balance monitoring for the DeepSeek Harness: polls the official /user/balance endpoint with your API key and shows the true remaining balance in the sidebar",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -36,7 +36,8 @@
   },
   "homepage": "https://github.com/PengPeng6845/dsh-balance#readme",
   "scripts": {
-    "test": "node test/smoke.mjs"
+    "test": "node test/smoke.mjs",
+    "release": "node scripts/release.mjs"
   },
   "publishConfig": {
     "access": "public"
@@ -48,7 +49,8 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-runtime"
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale"
       ]
     }
   }
