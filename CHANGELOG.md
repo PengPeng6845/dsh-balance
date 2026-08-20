@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-08-20
+
+### Changed
+
+- Near-realtime balance: refresh triggers on token activity (debounced
+  20s after the last usage change) in addition to the baseline poll,
+  which is now every 60s (was 5m); the widget polls every 15s (was 30s).
+
 ## [0.6.0] - 2026-08-20
 
 ### Changed

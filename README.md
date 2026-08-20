@@ -35,7 +35,7 @@ Override in your profile's cordis.patch.yml:
         balanceEnabled: true
         balanceApiKeyEnv: DEEPSEEK_API_KEY
         balanceBaseUrl: https://api.deepseek.com
-        balanceRefreshMs: 300000
+        balanceRefreshMs: 60000
         lowBalanceAlert: 5
 
 | Key | Type | Default | Meaning |
@@ -43,7 +43,7 @@ Override in your profile's cordis.patch.yml:
 | balanceEnabled | boolean | true | Poll the official balance endpoint |
 | balanceApiKeyEnv | string | DEEPSEEK_API_KEY | Credential-ref env name holding the API key |
 | balanceBaseUrl | string | https://api.deepseek.com | Balance API base |
-| balanceRefreshMs | number | 300000 | Balance poll interval (ms) |
+| balanceRefreshMs | number | 60000 | Baseline poll interval (ms); token activity re-checks ~20s after the last change |
 | lowBalanceAlert | number | 5 | Tint the value orange below this balance (account currency) |
 
 Balance is displayed in the account currency with no FX conversion.

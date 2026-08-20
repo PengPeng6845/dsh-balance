@@ -33,7 +33,7 @@ GitHub 直装：
         balanceEnabled: true
         balanceApiKeyEnv: DEEPSEEK_API_KEY
         balanceBaseUrl: https://api.deepseek.com
-        balanceRefreshMs: 300000
+        balanceRefreshMs: 60000
         lowBalanceAlert: 5
 
 | 键 | 类型 | 默认 | 含义 |
@@ -41,7 +41,7 @@ GitHub 直装：
 | balanceEnabled | boolean | true | 是否轮询官方余额端点 |
 | balanceApiKeyEnv | string | DEEPSEEK_API_KEY | 余额 API key 的凭据引用（环境变量名） |
 | balanceBaseUrl | string | https://api.deepseek.com | 余额 API 基地址 |
-| balanceRefreshMs | number | 300000 | 余额轮询间隔（毫秒） |
+| balanceRefreshMs | number | 60000 | 兜底轮询间隔（毫秒）；token 活动后约 20 秒也会主动刷新 |
 | lowBalanceAlert | number | 5 | 低于该余额时数字变橙（账户币种单位） |
 
 余额以账户币种显示，不经过任何汇率换算。

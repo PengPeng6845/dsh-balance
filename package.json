@@ -1,7 +1,7 @@
 {
   "name": "@pengpeng6845/dsh-balance",
   "description": "Real API balance monitoring for the DeepSeek Harness: polls the official /user/balance endpoint with your API key and shows the true remaining balance in the sidebar",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "main": "lib/index.js",
   "exports": {

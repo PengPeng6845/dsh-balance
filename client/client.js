@@ -3,7 +3,7 @@
  *
  * Hand-written __ModuleLoader__ bundle (no build step). The widget
  * registers into the sidebar.footer.action list slot, polls
- * GET /dsh-balance/summary every 30 seconds (paused while the tab is
+ * GET /dsh-balance/summary every 15 seconds (paused while the tab is
  * hidden), and shows ONLY the real account balance from the official
  * /user/balance endpoint.
  *
@@ -91,7 +91,7 @@ window.__ModuleLoader__.load({
         load();
         var id = setInterval(function () {
           if (!document.hidden) load();
-        }, 30000);
+        }, 15000);
         document.addEventListener("visibilitychange", onVisibility);
         return function () {
           stop = true;
