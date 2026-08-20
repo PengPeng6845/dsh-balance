@@ -1,0 +1,48 @@
+{
+  "name": "dsh-usage-cost",
+  "description": "Token consumption and API cost reporting for the DeepSeek Harness: cost math over the tokenUsage projection, durable day/month aggregates, and the model-facing token_usage tool",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "cordis",
+    "token",
+    "usage",
+    "cost",
+    "billing",
+    "budget"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PengPeng6845/dsh-usage-cost.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PengPeng6845/dsh-usage-cost/issues"
+  },
+  "homepage": "https://github.com/PengPeng6845/dsh-usage-cost#readme",
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "cordis.patch.yml"
+    }
+  }
+}

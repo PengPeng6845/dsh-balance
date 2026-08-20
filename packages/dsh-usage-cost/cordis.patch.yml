@@ -1,0 +1,29 @@
+# dsh bundle layer: mount the usage-cost plugin.
+#
+# The entry has no config here — builtin defaults apply (CNY, DeepSeek
+# official price table, persistent day/month aggregates). Override any of
+# them from the profile's own cordis.patch.yml:
+#
+#   - id: usage-cost
+#     config:
+#       currency: CNY
+#       persist: true
+#       prices:
+#         deepseek-chat:
+#           label: deepseek-chat (mine)
+#           inputPerMillion: 2
+#           cacheReadPerMillion: 0.5
+#           cacheWritePerMillion: 2
+#           outputPerMillion: 8
+#         "*":
+#           label: other models
+#           inputPerMillion: 2
+#           cacheReadPerMillion: 0
+#           cacheWritePerMillion: 0
+#           outputPerMillion: 8
+#
+# A user-provided "prices" map MERGES over the builtin table, so partial
+# overrides are fine.
+- insert:
+    - id: usage-cost
+      name: 'dsh-usage-cost'
