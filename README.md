@@ -1,75 +1,161 @@
-# @pengpeng6845/dsh-balance
+<div align="center">
 
-[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-balance/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-balance/actions)
+# 💰 dsh-balance
+
+**DeepSeek Harness 侧边栏 · 真实 API 余额监控**
+
+用你的 API key 直连官方账单端点 —— 只显示真实数据，不做任何估算。
+
+[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-balance/ci.yml?branch=main&label=CI)](https://github.com/PengPeng6845/dsh-balance/actions)
+[![version](https://img.shields.io/github/v/tag/PengPeng6845/dsh-balance?sort=semver&label=version)](https://github.com/PengPeng6845/dsh-balance/releases)
 [![license](https://img.shields.io/github/license/PengPeng6845/dsh-balance)](LICENSE)
+[![stars](https://img.shields.io/github/stars/PengPeng6845/dsh-balance?style=social)](https://github.com/PengPeng6845/dsh-balance)
 
-Real API balance in the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) sidebar: polls the official /user/balance endpoint with your API key and shows only real, verifiable numbers — no estimates.
+</div>
 
-[中文说明](README.zh.md)
+> 💡 **一句话**：模型花掉多少钱，侧边栏里瞄一眼就知道 —— 余额来自官方 API，不是本地估算。
 
-## Features
+## ✨ 特性
 
-- **Sidebar balance widget** — one flat native-style row "余额 ¥13.94" in the sidebar footer, refreshed every 30s; tooltip carries today's real spend (sum of balance drops) and the check time; the collapsed rail shows just the amount.
-- **API-key verified** — the balance comes from the official endpoint (real billing data). Drops between samples are real spend; top-up rises never count.
-- **token_usage tool** — kept as a bonus: the model can self-report exact provider token buckets plus the real balance; no estimated money anywhere.
-- **zh/en i18n** — widget texts ride the client locale service and follow the UI language (Chinese fallback).
-- **Zero dependencies** — no npm runtime deps, no build step; plain ESM host plus a hand-written client bundle.
+<table>
+<tr><th></th><th>特性</th><th>说明</th></tr>
+<tr><td>💰</td><td><b>真实余额</b></td><td>官方 <code>GET /user/balance</code> 端点，API key 核实，按账户币种显示</td></tr>
+<tr><td>⚡</td><td><b>准实时刷新</b></td><td>token 活动停止约 20 秒后主动追查 + 每分钟兜底轮询</td></tr>
+<tr><td>📉</td><td><b>今日实际花费</b></td><td>余额下降差累计（充值上涨自动忽略），悬停可见</td></tr>
+<tr><td>🚨</td><td><b>低余额告警</b></td><td>低于阈值（默认 ¥5）数字变橙</td></tr>
+<tr><td>🌐</td><td><b>中英双语</b></td><td>文案跟随界面语言自动切换</td></tr>
+<tr><td>🧹</td><td><b>零依赖</b></td><td>无 npm 运行时依赖、无构建步骤；Host 纯 ESM，Client 手写 bundle</td></tr>
+</table>
 
-## Install
+## 🖥️ 界面
 
-From npm (once published):
+侧边栏底部，一行扁平原生风格（无卡片、无边框，hover 才高亮）：
 
-    dsh plugin --profile web add @pengpeng6845/dsh-balance
+<pre>
+┌─────────────────────────────────────┐
+│  余额                      ¥22.39   │
+│  今日实际  ¥8.81 · 更新于 23:32     │   ← 悬停显示
+└─────────────────────────────────────┘
+</pre>
 
-From GitHub:
+- 余额低于警戒线 → 数字变 <b>橙色</b>
+- 数据过期（网络失败后退避期）→ 数字灰化，仍显示上次成功值
+- 侧边栏折叠 → 只显示金额
+- 标签页不可见 → 自动暂停轮询，省流量
 
-    dsh plugin --profile web add github:PengPeng6845/dsh-balance
+## 📦 安装
 
-Then make sure "@pengpeng6845/dsh-balance" is in dsh.profile.bundles in your profile's package.json and restart dsh web.
+npm（发布后推荐）：
 
-## Config
+<pre>dsh plugin --profile web add @pengpeng6845/dsh-balance</pre>
 
-Override in your profile's cordis.patch.yml:
+GitHub 直装：
 
-    - id: balance
-      config:
-        balanceEnabled: true
-        balanceApiKeyEnv: DEEPSEEK_API_KEY
-        balanceBaseUrl: https://api.deepseek.com
-        balanceRefreshMs: 60000
-        lowBalanceAlert: 5
+<pre>dsh plugin --profile web add github:PengPeng6845/dsh-balance</pre>
 
-| Key | Type | Default | Meaning |
-| --- | --- | --- | --- |
-| balanceEnabled | boolean | true | Poll the official balance endpoint |
-| balanceApiKeyEnv | string | DEEPSEEK_API_KEY | Credential-ref env name holding the API key |
-| balanceBaseUrl | string | https://api.deepseek.com | Balance API base |
-| balanceRefreshMs | number | 60000 | Baseline poll interval (ms); token activity re-checks ~20s after the last change |
-| lowBalanceAlert | number | 5 | Tint the value orange below this balance (account currency) |
+然后确认 profile 的 <code>package.json</code> 的 <code>dsh.profile.bundles</code> 里有 <code>"@pengpeng6845/dsh-balance"</code>，重启 <code>dsh web</code>。
 
-Balance is displayed in the account currency with no FX conversion.
+## ⚙️ 配置
 
-## Development & release
+在 profile 自己的 <code>cordis.patch.yml</code> 中按 id 覆盖：
 
-    npm test          # zero-install unit smoke suite (node test/smoke.mjs)
-    npm pack          # produce the distributable tarball
+<pre>
+- id: balance
+  config:
+    balanceEnabled: true              # 是否轮询官方余额端点
+    balanceApiKeyEnv: DEEPSEEK_API_KEY # 余额 API key 的凭据引用（环境变量名）
+    balanceBaseUrl: https://api.deepseek.com
+    balanceRefreshMs: 60000           # 兜底轮询间隔（毫秒）
+    lowBalanceAlert: 5                # 低余额警戒线（账户币种单位）
+</pre>
 
-One-command release (version bump + CHANGELOG + commit + tag + push;
-export GH_TOKEN to also create the GitHub Release):
+<table>
+<tr><th>键</th><th>类型</th><th>默认</th><th>含义</th></tr>
+<tr><td>balanceEnabled</td><td>boolean</td><td>true</td><td>是否轮询官方余额端点</td></tr>
+<tr><td>balanceApiKeyEnv</td><td>string</td><td>DEEPSEEK_API_KEY</td><td>余额 API key 的凭据引用</td></tr>
+<tr><td>balanceBaseUrl</td><td>string</td><td>https://api.deepseek.com</td><td>余额 API 基地址</td></tr>
+<tr><td>balanceRefreshMs</td><td>number</td><td>60000</td><td>兜底轮询间隔；token 活动后约 20 秒也会主动刷新</td></tr>
+<tr><td>lowBalanceAlert</td><td>number</td><td>5</td><td>低于该余额数字变橙</td></tr>
+</table>
 
-    npm run release -- 0.7.1 "Fix something"
+余额以账户币种显示，不做任何汇率换算。
 
-Publish to npm:
+## 🔄 工作原理
 
-    npm login         # once
-    npm publish       # then users can dsh plugin add @pengpeng6845/dsh-balance
+<pre>
+                ┌───────────────┐
+                │   你的 API key │ (凭据环境变量，每次请求重新解析，绝不落盘)
+                └──────┬────────┘
+                       │ Bearer
+                       ▼
+   ┌──────────────────────────────┐
+   │  GET /user/balance (官方)     │  每 60s 兜底轮询
+   │  · token 活动停止 20s 后追查   │  · 失败指数退避 5s→5m
+   │  · 并发去重 / 10s 超时         │  · 退避期继续供上次成功值
+   └──────────────┬───────────────┘
+                  │
+                  ▼
+   ┌──────────────────────────────┐
+   │  余额采样 → storage 持久化     │  今日实际 = 余额下降差之和
+   │  (schemaVersion 3, 旧数据迁移) │  (充值上涨自动忽略)
+   └──────┬───────────────┬───────┘
+          │               │
+          ▼               ▼
+  侧边栏小组件        token_usage 工具
+  (15s 拉取)         (模型自查 tokens+余额)
+</pre>
 
-The test suite runs on Node 20 and 22 in CI with no install step.
+## ❓ FAQ
 
-## Get listed in the plugin market
+<details>
+<summary>为什么只显示余额，没有成本估算？</summary>
+官方没有用量明细 API，本地估算随价格表漂移（历史上曾高估 70 倍）。本插件只信 <code>/user/balance</code> 的账单真值：余额下降就是花费。
+</details>
 
-Open a PR adding [PengPeng6845/dsh-balance](https://github.com/PengPeng6845/dsh-balance) to [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin).
+<details>
+<summary>多久更新一次？</summary>
+模型回复结束约 20 秒后主动查一次（计费在回复后结算）；空闲时每分钟兜底；页面每 15 秒拉取最新值。流式输出过程中余额不动是正常的。
+</details>
 
-## License
+<details>
+<summary>充值了会不会算成"负花费"？</summary>
+不会。余额上涨被识别为充值，不计入今日实际花费。
+</details>
 
-[MIT](LICENSE) © 2026 PengPeng6845
+<details>
+<summary>余额为 0 或显示"不可用"？</summary>
+检查 <code>DEEPSEEK_API_KEY</code> 环境变量/凭据是否配置，以及网络是否可达。悬停小组件可看详细提示。
+</details>
+
+## 🗺️ 路线图
+
+- [x] 侧边栏真实余额 + 准实时刷新
+- [x] 今日实际花费（余额差）
+- [x] 低余额告警 / 中英双语 / 一键发版
+- [ ] SSE 即时推送（余额变化 <1s 上屏）
+- [ ] 涨跌指示（▼¥0.08 每次消耗一目了然）
+- [ ] 余额历史曲线
+- [ ] 多 API key / 多账户
+
+## 🧑‍💻 开发与发布
+
+<pre>
+npm test                        # 零安装单元冒烟测试（Node 20/22 CI）
+npm pack                        # 生成可分发 tarball
+npm run release -- 0.7.1 "..."  # 一键发版：bump+CHANGELOG+测试+tag+推送(+Release)
+npm login && npm publish        # 发布到 npm
+</pre>
+
+## 🏪 上架插件市场
+
+到 <a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin">awesome-dsh-plugin</a> 提 PR 加一条本仓库条目，DSH 的「设置 → 插件市场」会自动收录（通常一天内生效）。
+
+## 📄 许可
+
+<a href="LICENSE">MIT</a> © 2026 <a href="https://github.com/PengPeng6845">PengPeng6845</a>
+
+---
+
+<div align="center">
+<sub>Made for <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a> · 感谢 <a href="https://github.com/dsh-market/dsh-market">dsh-market</a> 生态</sub>
+</div>
