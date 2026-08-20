@@ -30,10 +30,7 @@ window.__ModuleLoader__.load({
         loading: "查询中…",
         unavailable: "不可用",
         title: "API 真实余额",
-        today: "今日实际",
         low: "余额低于警戒线",
-        stale: "数据过期（上次成功更新的值）",
-        updated: "更新于",
         unavailableHint: "余额不可用：检查 DEEPSEEK_API_KEY 是否已配置（凭据环境变量），或网络是否可达",
       },
       en: {
@@ -41,10 +38,7 @@ window.__ModuleLoader__.load({
         loading: "Checking…",
         unavailable: "Unavailable",
         title: "Real API balance",
-        today: "Today's spend",
         low: "Below low-balance alert",
-        stale: "Stale (last successful value)",
-        updated: "Updated",
         unavailableHint: "Balance unavailable: check that DEEPSEEK_API_KEY is configured (credential env var) or that the network is reachable",
       },
     };
@@ -149,17 +143,8 @@ window.__ModuleLoader__.load({
         var bal = data.balance;
         var valueText = money(bal.totalBalance, bal.currency);
         var title = t("title") + " " + valueText;
-        if (typeof data.realTodayCost === "number" && data.realTodayCost > 0) {
-          title += " · " + t("today") + " " + money(data.realTodayCost, bal.currency);
-        }
         if (data.lowBalance === true) {
           title += " · " + t("low") + " " + money(data.lowBalanceThreshold, bal.currency);
-        }
-        if (bal.stale === true) {
-          title += " · " + t("stale");
-        }
-        if (bal.checkedAt) {
-          title += " · " + t("updated") + " " + new Date(bal.checkedAt).toLocaleTimeString();
         }
 
         if (!wide) {
