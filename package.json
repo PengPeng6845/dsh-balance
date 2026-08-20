@@ -30,12 +30,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PengPeng6845/dsh-usage-cost.git"
+    "url": "git+https://github.com/PengPeng6845/dsh-balance.git"
   },
   "bugs": {
-    "url": "https://github.com/PengPeng6845/dsh-usage-cost/issues"
+    "url": "https://github.com/PengPeng6845/dsh-balance/issues"
   },
-  "homepage": "https://github.com/PengPeng6845/dsh-usage-cost#readme",
+  "homepage": "https://github.com/PengPeng6845/dsh-balance#readme",
   "scripts": {
     "test": "node test/smoke.mjs"
   },

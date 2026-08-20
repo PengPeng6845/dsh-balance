@@ -1,7 +1,7 @@
 # @pengpeng6845/dsh-balance
 
-[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-usage-cost/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-usage-cost/actions)
-[![license](https://img.shields.io/github/license/PengPeng6845/dsh-usage-cost)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-balance/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-balance/actions)
+[![license](https://img.shields.io/github/license/PengPeng6845/dsh-balance)](LICENSE)
 
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的侧边栏加一个**真实 API 余额**显示：用你的 API key 轮询官方 /user/balance 端点，只显示真实数据，不做估算。
 
@@ -20,7 +20,7 @@ npm（发布后）：
 
 GitHub 直装：
 
-    dsh plugin --profile web add github:PengPeng6845/dsh-usage-cost
+    dsh plugin --profile web add github:PengPeng6845/dsh-balance
 
 然后确认 profile 的 package.json 的 dsh.profile.bundles 里有 "@pengpeng6845/dsh-balance"（install 后手动追加即可），重启 dsh web。
 
@@ -53,7 +53,7 @@ CI 在 Node 20 / 22 上运行同一套测试，无需安装步骤。
 
 ## 上架插件市场
 
-到 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 提 PR 加一条本仓库条目即可。
+到 [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin) 提 PR 加一条 [PengPeng6845/dsh-balance](https://github.com/PengPeng6845/dsh-balance) 条目即可。
 
 ## 许可
 

@@ -1,7 +1,7 @@
 # @pengpeng6845/dsh-balance
 
-[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-usage-cost/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-usage-cost/actions)
-[![license](https://img.shields.io/github/license/PengPeng6845/dsh-usage-cost)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-balance/ci.yml?branch=main)](https://github.com/PengPeng6845/dsh-balance/actions)
+[![license](https://img.shields.io/github/license/PengPeng6845/dsh-balance)](LICENSE)
 
 Real API balance in the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) sidebar: polls the official /user/balance endpoint with your API key and shows only real, verifiable numbers — no estimates.
 
@@ -22,7 +22,7 @@ From npm (once published):
 
 From GitHub:
 
-    dsh plugin --profile web add github:PengPeng6845/dsh-usage-cost
+    dsh plugin --profile web add github:PengPeng6845/dsh-balance
 
 Then make sure "@pengpeng6845/dsh-balance" is in dsh.profile.bundles in your profile's package.json and restart dsh web.
 
@@ -55,7 +55,7 @@ The test suite runs on Node 20 and 22 in CI with no install step.
 
 ## Get listed in the plugin market
 
-Open a PR adding this repository to [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin).
+Open a PR adding [PengPeng6845/dsh-balance](https://github.com/PengPeng6845/dsh-balance) to [awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin).
 
 ## License
 
