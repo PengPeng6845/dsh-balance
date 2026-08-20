@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-20
+
+### Added
+
+- SSE push: GET /dsh-balance/events holds an event stream and pushes the
+  snapshot the moment a balance check changes it; the widget's EventSource
+  updates <1s after billing settles, with the 15s poll kept as fallback.
+  25s heartbeat keeps proxies from closing idle streams.
+- CI hardening: the smoke suite now gates syntax on every shipped source
+  file, executes the client bundle factory (stubbed loader + React) and
+  asserts its slot registration contract, and drives the full host apply
+  with a stubbed context — tool registration, both HTTP routes, the
+  summary payload, and the SSE first frame.
+
 ## [0.7.1] - 2026-08-20
 
 ### Changed

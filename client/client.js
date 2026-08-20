@@ -92,17 +92,19 @@ window.__ModuleLoader__.load({
 
         React.useEffect(function () {
           var stop = false;
+          function apply(json) {
+            if (!stop && json && typeof json === "object") {
+              settled.current = true;
+              setData(json);
+            }
+          }
           function load() {
             fetch("/dsh-balance/summary")
               .then(function (resp) {
                 if (!resp.ok) return null;
                 return resp.json();
               })
-              .then(function (json) {
-                if (stop || !json || typeof json !== "object") return;
-                settled.current = true;
-                setData(json);
-              })
+              .then(apply)
               .catch(function () {});
           }
           function onVisibility() {
@@ -110,6 +112,22 @@ window.__ModuleLoader__.load({
             load();
           }
           load();
+          // Primary channel: SSE pushes the snapshot the moment the host
+          // checks a changed balance. The 15s poll stays as the fallback
+          // for proxies that break event streams.
+          var es = null;
+          try {
+            es = new EventSource("/dsh-balance/events");
+            es.onmessage = function (event) {
+              try {
+                apply(JSON.parse(event.data));
+              } catch {
+                // ignore malformed frames; the poll fallback recovers
+              }
+            };
+          } catch {
+            es = null;
+          }
           var id = setInterval(function () {
             if (!document.hidden) load();
           }, 15000);
@@ -117,6 +135,7 @@ window.__ModuleLoader__.load({
           return function () {
             stop = true;
             clearInterval(id);
+            if (es) es.close();
             document.removeEventListener("visibilitychange", onVisibility);
           };
         }, []);

@@ -1,7 +1,19 @@
 // Standalone unit smoke test for the zero-dep modules of @pengpeng6845/dsh-balance.
 // Run with: node test/smoke.mjs (no install step required).
+import { spawnSync } from "node:child_process";
 import { AggregateStore, dateKey } from "../lib/store.js";
 import { BalanceClient } from "../lib/balance.js";
+
+// Syntax gates for every shipped source file (catches the same errors a
+// browser bundle load would). stdio: "ignore" keeps this runnable inside
+// sandboxed environments that forbid piped child stdio.
+for (const f of ["lib/index.js", "lib/balance.js", "lib/store.js", "client/client.js"]) {
+  const result = spawnSync(process.execPath, ["--check", f], { stdio: "ignore" });
+  if (result.status !== 0) {
+    failures += 1;
+    console.log("FAIL syntax check: " + f);
+  }
+}
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -159,6 +171,151 @@ check("plugin name", mod.name, "balance");
 check("plugin inject", JSON.stringify(mod.inject), JSON.stringify(["tools", "timer"]));
 check("default export name", mod.default?.name, "balance");
 check("apply is function", typeof mod.apply, "function");
+
+// ---- client bundle: executable factory + registration contract ----
+{
+  const captured = [];
+  globalThis.window = {
+    __ModuleLoader__: { load: (def) => captured.push(def) },
+  };
+  await import("../client/client.js");
+  delete globalThis.window;
+  check("client bundle loads", captured.length, 1);
+  const factory = captured[0].factory;
+  const fakeReact = {
+    useState: (v) => [v, () => {}],
+    useEffect: () => {},
+    useRef: (v) => ({ current: v }),
+    createElement: () => null,
+    Fragment: "f",
+  };
+  const clientMod = factory((id) => (id === "react" ? fakeReact : undefined));
+  check("client plugin name", clientMod.name, "balance");
+  check("client plugin inject", JSON.stringify(clientMod.inject), JSON.stringify(["slots"]));
+  let slotName = null;
+  let registered = null;
+  const fakeSlots = {
+    inject: (name, cb) => {
+      slotName = name;
+      return cb();
+    },
+    register: (opts, comp) => {
+      registered = { opts, comp };
+      return () => {};
+    },
+  };
+  const fakeClientCtx = {
+    get: (n) => (n === "slots" ? fakeSlots : undefined),
+    effect: (cb) => cb(),
+  };
+  clientMod.apply(fakeClientCtx);
+  check("client slot", slotName, "sidebar.footer.action");
+  check("client slot id", registered?.opts?.id, "balance");
+  check("client slot name", registered?.opts?.name, "sidebar.footer.action");
+}
+
+// ---- host apply harness: tools + routes + SSE first frame ----
+{
+  const registeredTools = [];
+  const routes = [];
+  const capturedUpgradeDisposers = [];
+  const fakeRes = {
+    statusCode: 0,
+    headers: {},
+    writes: [],
+    writeHead(code, headers) {
+      this.statusCode = code;
+      Object.assign(this.headers, headers);
+    },
+    write(chunk) {
+      this.writes.push(String(chunk));
+    },
+    end(chunk) {
+      if (chunk !== undefined) this.writes.push(String(chunk));
+    },
+  };
+  const fakeReq = (method) => ({
+    method,
+    listeners: {},
+    on(ev, cb) {
+      this.listeners[ev] = cb;
+    },
+  });
+  const fakeWebServer = {
+    register(route) {
+      routes.push(route);
+      return () => {};
+    },
+  };
+  const fakeWebCtx = {
+    webServer: fakeWebServer,
+    interval: () => () => {},
+    effect: (cb) => {
+      capturedUpgradeDisposers.push(cb() ?? (() => {}));
+    },
+  };
+  const fakeCtx = {
+    get: (name) => {
+      if (name === "storage") return undefined;
+      if (name === "webServer") return fakeWebServer;
+      if (name === "systemPrompt") return undefined;
+      if (name === "credentials") return { resolve: async () => ({ value: "test-key" }) };
+      return undefined;
+    },
+    effect: (cb) => cb(),
+    timeout: () => () => {},
+    interval: () => () => {},
+    debounce: () => () => {},
+    inject: (names, cb) => {
+      if (names.includes("webServer")) cb(fakeWebCtx);
+      if (names.includes("sessionProjections")) {
+        cb({ effect: () => () => {}, sessionProjections: { onChanged: () => () => {} } });
+      }
+    },
+    tools: { register: (def) => registeredTools.push(def) },
+  };
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ balance_infos: [{ currency: "CNY", total_balance: "10" }] }),
+  });
+  let applyError = null;
+  try {
+    mod.apply(fakeCtx, {});
+    check("tool registered", registeredTools.length, 1);
+    check("tool name", registeredTools[0]?.name, "token_usage");
+    check("routes registered", routes.length, 2);
+    const summary = routes.find((r) => r.path === "/dsh-balance/summary");
+    const events = routes.find((r) => r.path === "/dsh-balance/events");
+    check("summary route exists", Boolean(summary), true);
+    check("events route exists", Boolean(events), true);
+
+    // summary route: poll fallback answers and seeds lastBalance
+    const sumRes = Object.create(fakeRes);
+    sumRes.statusCode = 0;
+    sumRes.headers = {};
+    sumRes.writes = [];
+    await summary.handler(fakeReq("GET"), sumRes);
+    check("summary status", sumRes.statusCode, 200);
+    const sumBody = JSON.parse(sumRes.writes.join(""));
+    check("summary balance", sumBody.balance.totalBalance, 10);
+
+    // SSE route: first frame arrives on connect, stream stays open
+    const sseRes = Object.create(fakeRes);
+    sseRes.statusCode = 0;
+    sseRes.headers = {};
+    sseRes.writes = [];
+    events.handler(fakeReq("GET"), sseRes);
+    check("sse status", sseRes.statusCode, 200);
+    check("sse content-type", sseRes.headers["content-type"], "text/event-stream");
+    const frames = sseRes.writes.join("");
+    check("sse retry hint", frames.includes("retry: 5000"), true);
+    check("sse first data frame", frames.includes("data: {"), true);
+    check("sse initial payload ok", frames.includes('"status":"ok"'), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
 
 console.log(failures === 0 ? "\nALL PASS" : "\n" + failures + " FAILURES");
 process.exit(failures === 0 ? 0 : 1);
