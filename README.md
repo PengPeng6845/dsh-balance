@@ -139,10 +139,6 @@ npm run release -- 0.7.1 "..."  # 一键发版：bump+CHANGELOG+测试+tag+推�
 npm login && npm publish        # 发布到 npm
 </pre>
 
-## 🏪 上架插件市场
-
-到 <a href="https://github.com/awesome-dsh-plugin/awesome-dsh-plugin">awesome-dsh-plugin</a> 提 PR 加一条本仓库条目，DSH 的「设置 → 插件市场」会自动收录（通常一天内生效）。
-
 ## 📄 许可
 
 <a href="LICENSE">MIT</a> © 2026 <a href="https://github.com/PengPeng6845">PengPeng6845</a>
