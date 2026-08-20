@@ -140,7 +140,7 @@ window.__ModuleLoader__.load({
       ctx.effect(function () {
         return slots.inject("sidebar.footer.action", function () {
           return slots.register(
-            { name: "sidebar.footer.action", key: "usage-cost" },
+            { name: "sidebar.footer.action", id: "usage-cost" },
             CostWidget,
           );
         });
