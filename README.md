@@ -14,7 +14,8 @@ Token consumption and API cost reporting for the [DeepSeek Harness](https://gith
 - **Real billing data** — reads the tokenUsage projection first (provider-reported, not heuristic); falls back to the token-meter anchor; returns zeros with a note when neither exists.
 - **Durable aggregates** — deltas fold into the storage hub's json backend unit usage_cost; degrades to in-memory when the backend is absent. Idempotent by construction (clamped deltas, replayed calls never double-count).
 - **Per-model pricing** — lookup order: model id, then provider route, then the "*" fallback entry. Builtin DeepSeek official rates, merged with your config.
-- **Zero dependencies** — no npm runtime dependencies, no build step; plain ESM, community-plugin shape (name / inject / apply).
+- **Sidebar cost widget** — a live "API 成本" card in the sidebar footer showing today/month cost and token counts, tinted orange/red past configurable thresholds; aggregates update continuously from the projection change feed (no tool call needed).
+- **Zero dependencies** — no npm runtime dependencies, no build step; plain ESM host plugin plus a hand-written client bundle (name / inject / apply).
 
 ## Install
 
@@ -50,6 +51,8 @@ Override in your profile's cordis.patch.yml:
 | currency | string | CNY | Currency symbol used in cost text |
 | persist | boolean | true | Persist day/month aggregates to the storage json backend |
 | prices | map | DeepSeek official rates | Price per 1M tokens, keyed by model id, provider route, or "*" |
+| warnThreshold | number | 5 | Today-cost level that tints the widget orange |
+| alertThreshold | number | 20 | Today-cost level that tints the widget red |
 
 Builtin price table (CNY per 1M tokens; check the provider's official page and update over time):
 

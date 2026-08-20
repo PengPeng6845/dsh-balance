@@ -52,7 +52,7 @@ check("dateKey pad", dateKey(new Date(2026, 0, 5)), "2026-01-05");
 // index module loads and exposes the plugin contract
 const mod = await import("../lib/index.js");
 check("plugin name", mod.name, "usage-cost");
-check("plugin inject", JSON.stringify(mod.inject), JSON.stringify(["tools"]));
+check("plugin inject", JSON.stringify(mod.inject), JSON.stringify(["tools", "timer"]));
 check("default export name", mod.default?.name, "usage-cost");
 check("apply is function", typeof mod.apply, "function");
 
