@@ -130,15 +130,6 @@ GitHub 直装：
 - [ ] 低余额 webhook 通知
 - [ ] 多 API key / 多账户
 
-## 🧑‍💻 开发与发布
-
-<pre>
-npm test                        # 零安装单元冒烟测试（Node 20/22 CI）
-npm pack                        # 生成可分发 tarball
-npm run release -- 0.9.0 "..."  # 一键发版：bump+CHANGELOG+测试+tag+推送(+Release)
-npm login && npm publish        # 发布到 npm
-</pre>
-
 ## 📄 许可
 
 <a href="LICENSE">MIT</a> © 2026 <a href="https://github.com/PengPeng6845">PengPeng6845</a>
