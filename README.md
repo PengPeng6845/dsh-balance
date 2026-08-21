@@ -121,15 +121,6 @@ GitHub 直装：
 检查 <code>DEEPSEEK_API_KEY</code> 环境变量/凭据是否配置，以及网络是否可达。悬停小组件可看详细提示。
 </details>
 
-## 🗺️ 路线图
-
-- [x] 侧边栏真实余额 + SSE 即时推送
-- [x] 低余额告警 / 中英双语 / 一键发版 / CI 加固
-- [ ] 涨跌指示（▼¥0.08 每次消耗一目了然）
-- [ ] 余额历史曲线
-- [ ] 低余额 webhook 通知
-- [ ] 多 API key / 多账户
-
 ## 📄 许可
 
 <a href="LICENSE">MIT</a> © 2026 <a href="https://github.com/PengPeng6845">PengPeng6845</a>
