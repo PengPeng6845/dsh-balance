@@ -6,6 +6,7 @@
 
 用你的 API key 直连官方账单端点 —— 只显示真实数据，不做任何估算。
 
+[![npm](https://img.shields.io/npm/v/%40pengpeng6845%2Fdsh-balance)](https://www.npmjs.com/package/@pengpeng6845/dsh-balance)
 [![CI](https://img.shields.io/github/actions/workflow/status/PengPeng6845/dsh-balance/ci.yml?branch=main&label=CI)](https://github.com/PengPeng6845/dsh-balance/actions)
 [![version](https://img.shields.io/github/v/tag/PengPeng6845/dsh-balance?sort=semver&label=version)](https://github.com/PengPeng6845/dsh-balance/releases)
 [![license](https://img.shields.io/github/license/PengPeng6845/dsh-balance)](LICENSE)
